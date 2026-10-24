@@ -39,10 +39,12 @@ def detect_platform(url):
     return "Other"
 
 def _cookiefile():
-    """Login wale platforms ke liye cookies:
+    """Login wale platforms ke liye cookies (koi aik):
     1) cookies.txt (local, app.py ke saath) ya
-    2) YTDL_COOKIES_B64 env var (Render dashboard mein PRIVATE — kabhi
-       public repo mein cookies mat daalna, sab dekh lenge)."""
+    2) YTDL_COOKIES_B64 env var (base64, Render dashboard mein PRIVATE) ya
+    3) YTDL_COOKIES_TEXT env var (cookies.txt ka seedha text, Render
+       dashboard mein PRIVATE — kabhi public repo mein cookies mat daalna,
+       sab dekh lenge)."""
     local = os.path.join(os.path.dirname(__file__), "cookies.txt")
     if os.path.exists(local):
         return local
@@ -53,6 +55,15 @@ def _cookiefile():
             path = "/tmp/vidget-cookies.txt"
             with open(path, "wb") as f:
                 f.write(base64.b64decode(b64))
+            return path
+        except Exception:
+            pass
+    text = os.environ.get("YTDL_COOKIES_TEXT")
+    if text:
+        try:
+            path = "/tmp/vidget-cookies.txt"
+            with open(path, "w") as f:
+                f.write(text)
             return path
         except Exception:
             return None
