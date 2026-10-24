@@ -38,6 +38,26 @@ def detect_platform(url):
             return name
     return "Other"
 
+def _cookiefile():
+    """Login wale platforms ke liye cookies:
+    1) cookies.txt (local, app.py ke saath) ya
+    2) YTDL_COOKIES_B64 env var (Render dashboard mein PRIVATE — kabhi
+       public repo mein cookies mat daalna, sab dekh lenge)."""
+    local = os.path.join(os.path.dirname(__file__), "cookies.txt")
+    if os.path.exists(local):
+        return local
+    b64 = os.environ.get("YTDL_COOKIES_B64")
+    if b64:
+        try:
+            import base64
+            path = "/tmp/vidget-cookies.txt"
+            with open(path, "wb") as f:
+                f.write(base64.b64decode(b64))
+            return path
+        except Exception:
+            return None
+    return None
+
 def ydl_opts(quality, job_id, android=False):
     out = os.path.join(DOWNLOADS, job_id, "%(title)s.%(ext)s")
     base = {
@@ -50,10 +70,8 @@ def ydl_opts(quality, job_id, android=False):
         # YouTube ka web client kabhi timeout deta hai; android client
         # us waqt bhi chalta hai — is liye fallback ke tor par use hota hai.
         base["extractor_args"] = {"youtube": {"player_client": ["android"]}}
-    # Login wale platforms (Reddit, Facebook) ke liye: agar app.py ke
-    # saath cookies.txt maujood ho (browser se export ki hui), to wo use hogi.
-    cookiefile = os.path.join(os.path.dirname(__file__), "cookies.txt")
-    if os.path.exists(cookiefile):
+    cookiefile = _cookiefile()
+    if cookiefile:
         base["cookiefile"] = cookiefile
     if quality == "mp3":
         base["format"] = "bestaudio/best"
@@ -148,9 +166,9 @@ def direct():
     else:
         fmt = "best"
     import yt_dlp
-    cookiefile = os.path.join(os.path.dirname(__file__), "cookies.txt")
     opts = {"quiet": True, "no_warnings": True, "skip_download": True, "format": fmt}
-    if os.path.exists(cookiefile):
+    cookiefile = _cookiefile()
+    if cookiefile:
         opts["cookiefile"] = cookiefile
     info = None
     last_error = None
